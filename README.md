@@ -1,4 +1,4 @@
-# Marko Polo — Multi-User Markdown Notes
+# Markopolo — Multi-User Markdown Notes
 
 A production-ready, full-stack personal notes application built with **Next.js 16**, **MongoDB**, **TypeScript**, and **Tailwind CSS**. Marko Polo enables multiple users to securely register, sign in, and manage their own Markdown notes with live preview, debounced autosave, tagging, search, and strict data isolation.
 

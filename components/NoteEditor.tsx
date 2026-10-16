@@ -159,7 +159,7 @@ export function NoteEditor({
 
   if (!note) {
     return (
-      <div className="h-full flex flex-col items-center justify-center p-8 text-center text-slate-400 dark:text-slate-600 bg-white dark:bg-slate-900">
+      <div className="h-full w-full flex-1 min-w-0 flex flex-col items-center justify-center p-8 text-center text-slate-400 dark:text-slate-600 bg-white dark:bg-slate-900">
         <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800/60 flex items-center justify-center mb-4 text-slate-300 dark:text-slate-600">
           <Save className="w-8 h-8 stroke-1" />
         </div>
@@ -174,7 +174,7 @@ export function NoteEditor({
   }
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-slate-900 overflow-hidden">
+    <div className="flex flex-col h-full w-full flex-1 min-w-0 bg-white dark:bg-slate-900 overflow-hidden">
       {/* Top Action Bar */}
       <div className="px-4 py-2.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 shrink-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs">
         <div className="flex items-center gap-2">
@@ -327,11 +327,11 @@ export function NoteEditor({
       />
 
       {/* Editor & Preview Area */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex w-full min-w-0 overflow-hidden">
         {/* Editor Pane */}
         {(viewMode === 'edit' || viewMode === 'split') && (
           <div
-            className={`flex-1 h-full p-4 overflow-y-auto ${
+            className={`flex-1 h-full min-w-0 p-4 overflow-y-auto ${
               viewMode === 'split' ? 'border-r border-slate-200 dark:border-slate-800' : ''
             }`}
           >
@@ -348,7 +348,7 @@ export function NoteEditor({
 
         {/* Live Preview Pane */}
         {(viewMode === 'preview' || viewMode === 'split') && (
-          <div className="flex-1 h-full p-6 overflow-y-auto bg-slate-50/40 dark:bg-slate-900/40">
+          <div className="flex-1 h-full min-w-0 p-6 overflow-y-auto bg-slate-50/40 dark:bg-slate-900/40">
             <MarkdownPreview content={content} />
           </div>
         )}

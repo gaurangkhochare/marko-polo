@@ -246,7 +246,7 @@ export function NotesWorkspace({ initialUser }: NotesWorkspaceProps) {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-white dark:bg-slate-950">
+    <div className="flex flex-col h-screen w-full min-w-0 overflow-hidden bg-white dark:bg-slate-950">
       {/* MongoDB connection alert banner if offline */}
       <DatabaseStatusBanner
         error={dbError}
@@ -254,7 +254,7 @@ export function NotesWorkspace({ initialUser }: NotesWorkspaceProps) {
         isRetrying={isRetryingDb}
       />
 
-      <div className="flex flex-1 h-full overflow-hidden">
+      <div className="flex flex-1 w-full h-full min-w-0 overflow-hidden">
         {/* Left Sidebar */}
         <Sidebar
           user={initialUser}
@@ -293,7 +293,7 @@ export function NotesWorkspace({ initialUser }: NotesWorkspaceProps) {
 
         {/* Right Panel: Note Editor / Preview */}
         <div
-          className={`flex-1 h-full overflow-hidden ${
+          className={`flex-1 flex-col w-full h-full min-w-0 overflow-hidden ${
             !isMobileEditorOpen ? 'hidden md:flex' : 'flex'
           }`}
         >

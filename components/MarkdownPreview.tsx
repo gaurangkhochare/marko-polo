@@ -24,7 +24,7 @@ export function MarkdownPreview({ content, className = '' }: MarkdownPreviewProp
 
   return (
     <div
-      className={`prose prose-slate dark:prose-invert max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline prose-code:bg-slate-100 dark:prose-code:bg-slate-800 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono prose-pre:bg-slate-900 prose-pre:text-slate-100 prose-table:border prose-table:border-slate-200 dark:prose-table:border-slate-700 ${className}`}
+      className={`prose prose-slate dark:prose-invert max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:no-underline hover:prose-a:underline prose-code:before:content-none prose-code:after:content-none prose-table:border prose-table:border-slate-200 dark:prose-table:border-slate-700 ${className}`}
     >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
@@ -33,6 +33,35 @@ export function MarkdownPreview({ content, className = '' }: MarkdownPreviewProp
           [rehypeHighlight, { ignoreMissing: true }],
         ]}
         components={{
+          pre: ({ children, ...props }) => (
+            <pre
+              className="p-4 rounded-xl my-4 overflow-x-auto text-sm font-mono leading-relaxed bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-800"
+              {...props}
+            >
+              {children}
+            </pre>
+          ),
+          code: ({ className, children, ...props }) => {
+            const isBlock = /language-(\w+)/.test(className || '') || className?.includes('hljs');
+            if (!isBlock) {
+              return (
+                <code
+                  className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 px-1.5 py-0.5 rounded-md text-xs font-mono font-medium border border-slate-200/60 dark:border-slate-700/60"
+                  {...props}
+                >
+                  {children}
+                </code>
+              );
+            }
+            return (
+              <code
+                className={`${className || ''} bg-transparent! p-0 text-inherit text-sm font-mono`}
+                {...props}
+              >
+                {children}
+              </code>
+            );
+          },
           a: ({ href, children, ...props }) => {
             const isExternal = href ? isExternalUrl(href) : false;
             return (
@@ -113,4 +142,3 @@ export function MarkdownPreview({ content, className = '' }: MarkdownPreviewProp
     </div>
   );
 }
-

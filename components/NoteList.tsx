@@ -55,7 +55,7 @@ export function NoteList({
   }
 
   return (
-    <div className="flex flex-col h-full bg-slate-100/50 dark:bg-slate-950/40 border-r border-slate-200/80 dark:border-slate-800/80 overflow-hidden">
+    <div className="flex flex-col h-full w-full bg-slate-100/50 dark:bg-slate-950/40 border-r border-slate-200/80 dark:border-slate-800/80 overflow-hidden">
       {/* Search and Header */}
       <div className="p-4 border-b border-slate-200/60 dark:border-slate-800/60 space-y-3">
         <div className="flex items-center justify-between gap-2">
