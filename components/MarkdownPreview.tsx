@@ -35,7 +35,7 @@ export function MarkdownPreview({ content, className = '' }: MarkdownPreviewProp
         components={{
           pre: ({ children, ...props }) => (
             <pre
-              className="p-4 rounded-xl my-4 overflow-x-auto text-sm font-mono leading-relaxed bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-800"
+              className="p-4 rounded-xl my-4 overflow-x-auto text-sm font-mono leading-relaxed bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-800"
               {...props}
             >
               {children}
@@ -46,7 +46,7 @@ export function MarkdownPreview({ content, className = '' }: MarkdownPreviewProp
             if (!isBlock) {
               return (
                 <code
-                  className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 px-1.5 py-0.5 rounded-md text-xs font-mono font-medium border border-slate-200/60 dark:border-slate-700/60"
+                  className="text-slate-800 dark:text-slate-200 px-1.5 py-0.5 rounded-md text-xs font-mono font-medium"
                   {...props}
                 >
                   {children}
