@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import {
   Pin,
   Archive,
@@ -17,13 +18,31 @@ import {
 import { MarkdownToolbar, EditorViewMode } from '@/components/MarkdownToolbar';
 import { MarkdownPreview } from '@/components/MarkdownPreview';
 import { DeleteConfirmDialog } from '@/components/DeleteConfirmDialog';
+import type { MonacoEditorInstance } from '@/components/MonacoEditorPane';
 import { INote } from '@/types';
+
+const MonacoEditorPane = dynamic(
+  () => import('@/components/MonacoEditorPane').then((mod) => mod.MonacoEditorPane),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full w-full flex items-center justify-center bg-white dark:bg-slate-900 text-slate-400 text-xs">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <span>Loading Editor...</span>
+        </div>
+      </div>
+    ),
+  }
+);
 
 interface NoteEditorProps {
   note: INote | null;
   onUpdateNote: (updated: Partial<INote> & { _id: string }) => Promise<boolean>;
   onDeleteNote: (noteId: string) => Promise<boolean>;
   onBackToList?: () => void;
+  isAutosave?: boolean;
+  onToggleAutosave?: () => void;
 }
 
 type SaveStatus = 'saved' | 'saving' | 'unsaved' | 'error';
@@ -33,7 +52,13 @@ export function NoteEditor({
   onUpdateNote,
   onDeleteNote,
   onBackToList,
+  isAutosave: propIsAutosave,
+  onToggleAutosave,
 }: NoteEditorProps) {
+  const [internalAutosave, setInternalAutosave] = useState(false);
+  const isAutosave = propIsAutosave !== undefined ? propIsAutosave : internalAutosave;
+  const toggleAutosave = onToggleAutosave || (() => setInternalAutosave((prev) => !prev));
+
   const [title, setTitle] = useState(note?.title || '');
   const [content, setContent] = useState(note?.content || '');
   const [tags, setTags] = useState<string[]>(note?.tags || []);
@@ -48,7 +73,7 @@ export function NoteEditor({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const monacoEditorRef = useRef<MonacoEditorInstance | null>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Perform save operation
@@ -79,43 +104,56 @@ export function NoteEditor({
     [note, title, content, tags, isPinned, isArchived, onUpdateNote]
   );
 
-  // Trigger autosave when title or content change (with debouncing)
-  const triggerAutosave = useCallback(() => {
+  const handleManualSave = useCallback(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    saveChanges();
+  }, [saveChanges]);
+
+  // Trigger autosave when title or content change (with debouncing, only if autosave is enabled)
+  const triggerChange = useCallback(() => {
     setSaveStatus('unsaved');
 
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
 
-    debounceTimerRef.current = setTimeout(() => {
-      saveChanges();
-    }, 1000);
-  }, [saveChanges]);
+    if (isAutosave) {
+      debounceTimerRef.current = setTimeout(() => {
+        saveChanges();
+      }, 1000);
+    }
+  }, [isAutosave, saveChanges]);
+
+  const handleToggleAutosave = () => {
+    if (!isAutosave && saveStatus === 'unsaved') {
+      handleManualSave();
+    }
+    toggleAutosave();
+  };
 
   // Handle Ctrl+S keyboard shortcut
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        if (debounceTimerRef.current) {
-          clearTimeout(debounceTimerRef.current);
-        }
-        saveChanges();
+        handleManualSave();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [saveChanges]);
+  }, [handleManualSave]);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value);
-    triggerAutosave();
+    triggerChange();
   };
 
   const handleContentChange = (value: string) => {
     setContent(value);
-    triggerAutosave();
+    triggerChange();
   };
 
   const handleTogglePin = async () => {
@@ -157,6 +195,13 @@ export function NoteEditor({
     setIsDeleteDialogOpen(false);
   };
 
+  const handleViewModeChange = (mode: EditorViewMode) => {
+    setViewMode(mode);
+    setTimeout(() => {
+      monacoEditorRef.current?.layout();
+    }, 60);
+  };
+
   if (!note) {
     return (
       <div className="h-full w-full flex-1 min-w-0 flex flex-col items-center justify-center p-8 text-center text-slate-400 dark:text-slate-600 bg-white dark:bg-slate-900">
@@ -188,43 +233,82 @@ export function NoteEditor({
             </button>
           )}
 
-          {/* Save Status Badge */}
-          <div className="flex items-center gap-1.5 text-xs">
-            {saveStatus === 'saved' && (
-              <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
-                <Check className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Saved</span>
-              </span>
+          {/* Manual Save Button */}
+          <button
+            type="button"
+            onClick={handleManualSave}
+            disabled={saveStatus === 'saving'}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              saveStatus === 'unsaved'
+                ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs cursor-pointer active:scale-95'
+                : saveStatus === 'saving'
+                ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 cursor-wait'
+                : saveStatus === 'error'
+                ? 'bg-red-600 hover:bg-red-700 text-white shadow-xs cursor-pointer'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer'
+            } disabled:opacity-60`}
+            title="Save note (Ctrl+S)"
+          >
+            {saveStatus === 'saving' ? (
+              <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            ) : saveStatus === 'saved' ? (
+              <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            ) : saveStatus === 'error' ? (
+              <AlertCircle className="w-3.5 h-3.5" />
+            ) : (
+              <Save className="w-3.5 h-3.5" />
             )}
-            {saveStatus === 'saving' && (
-              <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-medium">
-                <div className="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                <span>Saving...</span>
-              </span>
-            )}
-            {saveStatus === 'unsaved' && (
-              <button
-                type="button"
-                onClick={() => saveChanges()}
-                className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-medium hover:underline cursor-pointer"
-                title="Click to save now (Ctrl+S)"
-              >
-                <Clock className="w-3.5 h-3.5" />
-                <span>Unsaved changes</span>
-              </button>
-            )}
-            {saveStatus === 'error' && (
-              <button
-                type="button"
-                onClick={() => saveChanges()}
-                className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 font-medium hover:underline cursor-pointer"
-                title={errorMessage || 'Click to retry'}
-              >
-                <AlertCircle className="w-3.5 h-3.5" />
-                <span>Save error (Retry)</span>
-              </button>
-            )}
-          </div>
+            <span>
+              {saveStatus === 'saving'
+                ? 'Saving...'
+                : saveStatus === 'saved'
+                ? 'Saved'
+                : saveStatus === 'error'
+                ? 'Retry Save'
+                : 'Save'}
+            </span>
+          </button>
+
+          {/* Autosave Toggle Button */}
+          <button
+            type="button"
+            onClick={handleToggleAutosave}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors border cursor-pointer select-none ${
+              isAutosave
+                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/80'
+                : 'bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+            title={
+              isAutosave
+                ? 'Autosave is ON (changes save automatically after 1s). Click to disable.'
+                : 'Autosave is OFF (manual saving via Save button or Ctrl+S). Click to enable.'
+            }
+          >
+            <span
+              className={`inline-block w-2 h-2 rounded-full transition-colors ${
+                isAutosave
+                  ? 'bg-emerald-500 dark:bg-emerald-400 animate-pulse'
+                  : 'bg-slate-300 dark:bg-slate-600'
+              }`}
+            />
+            <span>Autosave: {isAutosave ? 'On' : 'Off'}</span>
+          </button>
+
+          {/* Unsaved Indicator when autosave is off */}
+          {saveStatus === 'unsaved' && !isAutosave && (
+            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+              <Clock className="w-3 h-3" />
+              <span>Unsaved changes</span>
+            </span>
+          )}
+
+          {/* Error Message if error */}
+          {saveStatus === 'error' && (
+            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] text-red-600 dark:text-red-400 font-medium">
+              <AlertCircle className="w-3 h-3" />
+              <span>{errorMessage || 'Failed to save'}</span>
+            </span>
+          )}
         </div>
 
         {/* Note Controls */}
@@ -232,7 +316,7 @@ export function NoteEditor({
           <button
             type="button"
             onClick={handleTogglePin}
-            className={`p-1.5 rounded-lg text-xs font-medium transition-colors ${
+            className={`p-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
               isPinned
                 ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300'
                 : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -245,7 +329,7 @@ export function NoteEditor({
           <button
             type="button"
             onClick={handleToggleArchive}
-            className={`p-1.5 rounded-lg text-xs font-medium transition-colors ${
+            className={`p-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
               isArchived
                 ? 'bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300'
                 : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -273,7 +357,7 @@ export function NoteEditor({
       </div>
 
       {/* Title & Tags Header */}
-      <div className="px-6 pt-5 pb-3 space-y-3">
+      <div className="px-6 pt-5 pb-3 space-y-3 shrink-0">
         <input
           type="text"
           value={title}
@@ -319,29 +403,27 @@ export function NoteEditor({
 
       {/* Formatting Toolbar */}
       <MarkdownToolbar
-        textareaRef={textareaRef}
+        editorRef={monacoEditorRef}
         content={content}
         onChange={handleContentChange}
         viewMode={viewMode}
-        onViewModeChange={setViewMode}
+        onViewModeChange={handleViewModeChange}
       />
 
       {/* Editor & Preview Area */}
-      <div className="flex-1 flex w-full min-w-0 overflow-hidden">
-        {/* Editor Pane */}
+      <div className="flex-1 flex w-full min-w-0 min-h-0 overflow-hidden">
+        {/* Editor Pane with Monaco */}
         {(viewMode === 'edit' || viewMode === 'split') && (
           <div
-            className={`flex-1 h-full min-w-0 p-4 overflow-y-auto ${
+            className={`flex-1 h-full min-w-0 min-h-0 ${
               viewMode === 'split' ? 'border-r border-slate-200 dark:border-slate-800' : ''
             }`}
           >
-            <textarea
-              ref={textareaRef}
+            <MonacoEditorPane
               value={content}
-              onChange={(e) => handleContentChange(e.target.value)}
-              placeholder="Start writing markdown here... Use the toolbar above for formatting or write raw markdown syntax."
-              className="w-full h-full min-h-[400px] resize-none bg-transparent font-mono text-sm leading-relaxed text-slate-800 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-hidden"
-              spellCheck="false"
+              onChange={handleContentChange}
+              onSave={() => saveChanges()}
+              editorRef={monacoEditorRef}
             />
           </div>
         )}
@@ -365,4 +447,3 @@ export function NoteEditor({
     </div>
   );
 }
-

@@ -28,6 +28,33 @@ export function NotesWorkspace({ initialUser }: NotesWorkspaceProps) {
   const [isMobileEditorOpen, setIsMobileEditorOpen] = useState(false);
   const [dbError, setDbError] = useState<string | null>(null);
   const [isRetryingDb, setIsRetryingDb] = useState(false);
+  const [isAutosave, setIsAutosave] = useState<boolean>(false);
+
+  // Load user autosave preference from localStorage (default: false / off)
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('marko_autosave');
+      if (stored !== null) {
+        setIsAutosave(stored === 'true');
+      } else {
+        setIsAutosave(false);
+      }
+    } catch {
+      setIsAutosave(false);
+    }
+  }, []);
+
+  const handleToggleAutosave = useCallback(() => {
+    setIsAutosave((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('marko_autosave', String(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  }, []);
 
   // Debounce search query input (300ms)
   useEffect(() => {
@@ -303,6 +330,8 @@ export function NotesWorkspace({ initialUser }: NotesWorkspaceProps) {
             onUpdateNote={handleUpdateNote}
             onDeleteNote={handleDeleteNote}
             onBackToList={() => setIsMobileEditorOpen(false)}
+            isAutosave={isAutosave}
+            onToggleAutosave={handleToggleAutosave}
           />
         </div>
       </div>

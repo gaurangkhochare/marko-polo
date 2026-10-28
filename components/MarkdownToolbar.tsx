@@ -21,11 +21,13 @@ import {
   Edit3,
   Eye,
 } from 'lucide-react';
+import type { MonacoEditorInstance } from '@/components/MonacoEditorPane';
 
 export type EditorViewMode = 'split' | 'edit' | 'preview';
 
 interface MarkdownToolbarProps {
-  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+  editorRef?: React.MutableRefObject<MonacoEditorInstance | null>;
+  textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
   content: string;
   onChange: (value: string) => void;
   viewMode: EditorViewMode;
@@ -33,6 +35,7 @@ interface MarkdownToolbarProps {
 }
 
 export function MarkdownToolbar({
+  editorRef,
   textareaRef,
   content,
   onChange,
@@ -40,7 +43,44 @@ export function MarkdownToolbar({
   onViewModeChange,
 }: MarkdownToolbarProps) {
   const insertFormatting = (prefix: string, suffix: string = '', defaultText: string = '') => {
-    const textarea = textareaRef.current;
+    // 1. Monaco Editor Native Insertion
+    if (editorRef?.current) {
+      const editor = editorRef.current;
+      const selection = editor.getSelection();
+      if (!selection) return;
+
+      const model = editor.getModel();
+      if (!model) return;
+
+      const selectedText = model.getValueInRange(selection) || defaultText;
+      const replacement = `${prefix}${selectedText}${suffix}`;
+
+      editor.executeEdits('toolbar-format', [
+        {
+          range: selection,
+          text: replacement,
+          forceMoveMarkers: true,
+        },
+      ]);
+
+      // If text was empty, position cursor inside prefix & suffix
+      if (!model.getValueInRange(selection)) {
+        const startColumn = selection.startColumn + prefix.length;
+        const endColumn = startColumn + defaultText.length;
+        editor.setSelection({
+          startLineNumber: selection.startLineNumber,
+          startColumn: startColumn,
+          endLineNumber: selection.endLineNumber,
+          endColumn: endColumn,
+        });
+      }
+
+      editor.focus();
+      return;
+    }
+
+    // 2. Textarea Fallback
+    const textarea = textareaRef?.current;
     if (!textarea) return;
 
     const start = textarea.selectionStart;
@@ -51,7 +91,6 @@ export function MarkdownToolbar({
     const newContent = content.substring(0, start) + replacement + content.substring(end);
     onChange(newContent);
 
-    // Reposition cursor
     setTimeout(() => {
       textarea.focus();
       textarea.setSelectionRange(
@@ -62,7 +101,52 @@ export function MarkdownToolbar({
   };
 
   const insertLinePrefix = (prefix: string, defaultText: string = '') => {
-    const textarea = textareaRef.current;
+    // 1. Monaco Editor Native Line Prefix
+    if (editorRef?.current) {
+      const editor = editorRef.current;
+      const selection = editor.getSelection();
+      if (!selection) return;
+
+      const model = editor.getModel();
+      if (!model) return;
+
+      const lineNumber = selection.startLineNumber;
+      const lineContent = model.getLineContent(lineNumber);
+
+      if (lineContent.trim() === '' && defaultText) {
+        editor.executeEdits('toolbar-prefix', [
+          {
+            range: {
+              startLineNumber: lineNumber,
+              startColumn: 1,
+              endLineNumber: lineNumber,
+              endColumn: lineContent.length + 1,
+            },
+            text: `${prefix}${defaultText}`,
+            forceMoveMarkers: true,
+          },
+        ]);
+      } else {
+        editor.executeEdits('toolbar-prefix', [
+          {
+            range: {
+              startLineNumber: lineNumber,
+              startColumn: 1,
+              endLineNumber: lineNumber,
+              endColumn: 1,
+            },
+            text: prefix,
+            forceMoveMarkers: true,
+          },
+        ]);
+      }
+
+      editor.focus();
+      return;
+    }
+
+    // 2. Textarea Fallback
+    const textarea = textareaRef?.current;
     if (!textarea) return;
 
     const start = textarea.selectionStart;
@@ -98,7 +182,7 @@ export function MarkdownToolbar({
         <button
           type="button"
           onClick={() => insertFormatting('**', '**', 'bold text')}
-          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           title="Bold (Ctrl+B)"
         >
           <Bold className="w-4 h-4" />
@@ -106,7 +190,7 @@ export function MarkdownToolbar({
         <button
           type="button"
           onClick={() => insertFormatting('*', '*', 'italic text')}
-          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           title="Italic (Ctrl+I)"
         >
           <Italic className="w-4 h-4" />
@@ -114,7 +198,7 @@ export function MarkdownToolbar({
         <button
           type="button"
           onClick={() => insertFormatting('~~', '~~', 'strikethrough text')}
-          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           title="Strikethrough"
         >
           <Strikethrough className="w-4 h-4" />
@@ -125,7 +209,7 @@ export function MarkdownToolbar({
         <button
           type="button"
           onClick={() => insertLinePrefix('# ', 'Heading 1')}
-          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           title="Heading 1"
         >
           <Heading1 className="w-4 h-4" />
@@ -133,7 +217,7 @@ export function MarkdownToolbar({
         <button
           type="button"
           onClick={() => insertLinePrefix('## ', 'Heading 2')}
-          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           title="Heading 2"
         >
           <Heading2 className="w-4 h-4" />
@@ -141,7 +225,7 @@ export function MarkdownToolbar({
         <button
           type="button"
           onClick={() => insertLinePrefix('### ', 'Heading 3')}
-          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           title="Heading 3"
         >
           <Heading3 className="w-4 h-4" />
@@ -152,7 +236,7 @@ export function MarkdownToolbar({
         <button
           type="button"
           onClick={() => insertLinePrefix('- ', 'List item')}
-          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           title="Bullet List"
         >
           <List className="w-4 h-4" />
@@ -160,7 +244,7 @@ export function MarkdownToolbar({
         <button
           type="button"
           onClick={() => insertLinePrefix('1. ', 'Numbered item')}
-          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           title="Numbered List"
         >
           <ListOrdered className="w-4 h-4" />
@@ -168,7 +252,7 @@ export function MarkdownToolbar({
         <button
           type="button"
           onClick={() => insertLinePrefix('- [ ] ', 'Task to do')}
-          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           title="Task List"
         >
           <CheckSquare className="w-4 h-4" />
@@ -176,7 +260,7 @@ export function MarkdownToolbar({
         <button
           type="button"
           onClick={() => insertLinePrefix('> ', 'Quote text')}
-          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           title="Blockquote"
         >
           <Quote className="w-4 h-4" />
@@ -187,7 +271,7 @@ export function MarkdownToolbar({
         <button
           type="button"
           onClick={() => insertFormatting('`', '`', 'inline code')}
-          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           title="Inline Code"
         >
           <Code className="w-4 h-4" />
@@ -195,7 +279,7 @@ export function MarkdownToolbar({
         <button
           type="button"
           onClick={() => insertFormatting('```\n', '\n```', 'code block')}
-          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           title="Code Block"
         >
           <FileCode className="w-4 h-4" />
@@ -203,7 +287,7 @@ export function MarkdownToolbar({
         <button
           type="button"
           onClick={() => insertFormatting('[', '](https://example.com)', 'Link text')}
-          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           title="Hyperlink"
         >
           <LinkIcon className="w-4 h-4" />
@@ -215,7 +299,7 @@ export function MarkdownToolbar({
               '\n| Header 1 | Header 2 |\n| --- | --- |\n| Cell 1 | Cell 2 |\n'
             )
           }
-          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           title="Insert Table"
         >
           <TableIcon className="w-4 h-4" />
@@ -223,7 +307,7 @@ export function MarkdownToolbar({
         <button
           type="button"
           onClick={() => insertFormatting('\n---\n')}
-          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+          className="p-1.5 rounded hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           title="Horizontal Rule"
         >
           <Minus className="w-4 h-4" />
@@ -235,9 +319,9 @@ export function MarkdownToolbar({
         <button
           type="button"
           onClick={() => onViewModeChange('edit')}
-          className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition-colors ${
+          className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition-colors cursor-pointer ${
             viewMode === 'edit'
-              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
           title="Editor only"
@@ -248,9 +332,9 @@ export function MarkdownToolbar({
         <button
           type="button"
           onClick={() => onViewModeChange('split')}
-          className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition-colors ${
+          className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition-colors cursor-pointer ${
             viewMode === 'split'
-              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
           title="Side-by-side split view"
@@ -261,9 +345,9 @@ export function MarkdownToolbar({
         <button
           type="button"
           onClick={() => onViewModeChange('preview')}
-          className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition-colors ${
+          className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition-colors cursor-pointer ${
             viewMode === 'preview'
-              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
           title="Preview rendered Markdown"
@@ -275,4 +359,3 @@ export function MarkdownToolbar({
     </div>
   );
 }
-
