@@ -26,7 +26,7 @@ import type { MonacoEditorInstance } from '@/components/MonacoEditorPane';
 export type EditorViewMode = 'split' | 'edit' | 'preview';
 
 interface MarkdownToolbarProps {
-  editorRef?: React.MutableRefObject<MonacoEditorInstance | null>;
+  editorRef?: React.RefObject<MonacoEditorInstance | null>;
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
   content: string;
   onChange: (value: string) => void;
@@ -176,7 +176,7 @@ export function MarkdownToolbar({
   };
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-1 p-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300">
+    <div className="flex flex-wrap items-center justify-between gap-1 p-2 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300">
       {/* Formatting Tools */}
       <div className="flex flex-wrap items-center gap-0.5">
         <button
