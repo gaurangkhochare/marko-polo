@@ -22,6 +22,12 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
     return cached.conn;
   }
 
+  // Reset cache if previous connection is disconnected
+  if (cached.conn && cached.conn.connection.readyState !== 1) {
+    cached.conn = null;
+    cached.promise = null;
+  }
+
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
