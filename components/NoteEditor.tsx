@@ -66,7 +66,12 @@ export function NoteEditor({
   const [isPinned, setIsPinned] = useState(note?.isPinned || false);
   const [isArchived, setIsArchived] = useState(note?.isArchived || false);
 
-  const [viewMode, setViewMode] = useState<EditorViewMode>('split');
+  const [viewMode, setViewMode] = useState<EditorViewMode>(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      return 'edit';
+    }
+    return 'split';
+  });
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -145,6 +150,27 @@ export function NoteEditor({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleManualSave]);
+
+  // On small and medium screens (< 1024px), split view is not supported; fallback to 'edit'
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setViewMode((current) => {
+          if (current === 'split') {
+            setTimeout(() => {
+              monacoEditorRef.current?.layout();
+            }, 60);
+            return 'edit';
+          }
+          return current;
+        });
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value);
