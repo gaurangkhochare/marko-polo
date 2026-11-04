@@ -15,6 +15,7 @@
     "bcryptjs": "^3.0.3",
     "jose": "^6.2.12",
     "lucide-react": "^1.57.0",
+    "monaco-editor": "^0.57.0",
     "mongoose": "^9.11.2",
     "next": "16.4.1",
     "react": "19.3.0",
@@ -38,5 +39,10 @@
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^5"
+  },
+  "overrides": {
+    "dompurify": "3.4.17",
+    "minimatch": "11.0.4",
+    "postcss-selector-parser": "6.1.5"
   }
 }
