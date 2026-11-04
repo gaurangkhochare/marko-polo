@@ -131,9 +131,11 @@ export function MonacoEditorPane({
           renderLineHighlight: 'all',
           renderWhitespace: 'none',
           padding: { top: 16, bottom: 16 },
+          scrollBeyondLastColumn: -1, // This somehow disables horizontal scrolling of the editor
           scrollbar: {
             verticalScrollbarSize: 8,
-            horizontalScrollbarSize: 8,
+            horizontal: 'hidden',
+            horizontalScrollbarSize: 0,
           },
           quickSuggestions: false,
           folding: true,
