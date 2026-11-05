@@ -41,6 +41,8 @@ export async function GET(req: NextRequest) {
       tag: searchParams.get('tag') || undefined,
       view: searchParams.get('view') || undefined,
       sort: searchParams.get('sort') || undefined,
+      limit: searchParams.get('limit') || undefined,
+      cursor: searchParams.get('cursor') || undefined,
     });
 
     if (!parsedQuery.success) {
@@ -50,7 +52,17 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const { q, tag, view = 'all', sort = 'updatedAt_desc' } = parsedQuery.data;
+    const { q, tag, view = 'all', sort = 'updatedAt_desc', limit = 25, cursor } = parsedQuery.data;
+
+    const normalizedLimit = Math.min(Math.max(limit, 1), 100);
+    const parsedCursor = cursor ? new Date(cursor) : null;
+
+    if (cursor && Number.isNaN(parsedCursor?.getTime() ?? NaN)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid cursor parameter' },
+        { status: 400 }
+      );
+    }
 
     // Strict user-scoped query
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -80,6 +92,10 @@ export async function GET(req: NextRequest) {
       ];
     }
 
+    if (parsedCursor) {
+      mongoQuery.updatedAt = { $lt: parsedCursor };
+    }
+
     // Determine sorting criteria
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let sortCriteria: Record<string, any> = { isPinned: -1, updatedAt: -1 };
@@ -91,9 +107,13 @@ export async function GET(req: NextRequest) {
 
     const notes = await Note.find(mongoQuery)
       .sort(sortCriteria)
+      .limit(normalizedLimit + 1)
       .lean();
 
-    const formattedNotes = notes.map((note) => ({
+    const hasMore = notes.length > normalizedLimit;
+    const page = hasMore ? notes.slice(0, normalizedLimit) : notes;
+
+    const formattedNotes = page.map((note) => ({
       _id: note._id.toString(),
       title: note.title,
       content: note.content,
@@ -109,6 +129,8 @@ export async function GET(req: NextRequest) {
       success: true,
       notes: formattedNotes,
       count: formattedNotes.length,
+      hasMore,
+      nextCursor: hasMore && formattedNotes.length > 0 ? formattedNotes[formattedNotes.length - 1].updatedAt : null,
     });
   } catch (error) {
     console.error('Error fetching notes:', error);

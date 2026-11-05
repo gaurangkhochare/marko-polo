@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
     };
 
     const token = await createSessionToken(userPayload);
+    const wantsToken = req.headers.get('x-client') === 'mobile';
     await setSessionCookie(token);
 
     return NextResponse.json(
@@ -72,6 +73,7 @@ export async function POST(req: NextRequest) {
           email: newUser.email,
           createdAt: newUser.createdAt,
         },
+        ...(wantsToken ? { token } : {}),
       },
       { status: 201 }
     );
