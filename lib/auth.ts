@@ -1,9 +1,14 @@
 import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { AuthSession } from '@/types';
 
-const AUTH_SECRET = process.env.AUTH_SECRET || 'marko-polo-super-secure-dev-secret-key-32chars!';
+const AUTH_SECRET = process.env.AUTH_SECRET;
+
+if (!AUTH_SECRET || AUTH_SECRET.length < 32) {
+  throw new Error('AUTH_SECRET must be set and at least 32 characters');
+}
+
 const SECRET_KEY = new TextEncoder().encode(AUTH_SECRET);
 export const COOKIE_NAME = 'marko_auth_token';
 
@@ -65,9 +70,16 @@ export async function verifySessionToken(token: string): Promise<AuthSession | n
 }
 
 /**
- * Retrieves the current session from incoming HTTP-only cookies
+ * Retrieves the current session from incoming bearer tokens or HTTP-only cookies
  */
 export async function getSession(): Promise<AuthSession | null> {
+  const requestHeaders = await headers();
+  const authHeader = requestHeaders.get('authorization');
+
+  if (authHeader?.startsWith('Bearer ')) {
+    return verifySessionToken(authHeader.slice('Bearer '.length));
+  }
+
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
 

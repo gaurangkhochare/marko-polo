@@ -82,6 +82,8 @@ export const queryNotesSchema = z.object({
   tag: z.string().trim().max(30).optional(),
   view: z.enum(['all', 'pinned', 'archived']).optional(),
   sort: z.enum(['updatedAt_desc', 'createdAt_desc', 'title_asc']).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+  cursor: z.string().trim().max(100).optional(),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
