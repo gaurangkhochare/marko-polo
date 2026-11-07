@@ -119,7 +119,7 @@ export function MonacoEditorPane({
         }
         options={{
           wordWrap: 'on',
-          lineNumbers: 'on',
+          lineNumbers: 'off',
           minimap: { enabled: false },
           fontSize: 14,
           fontFamily:
