@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { UserProfileMenu } from '@/components/UserProfileMenu';
 import { AuthSession, NoteViewMode } from '@/types';
+import markoIcon from '@/public/marko-icon.png';
 
 interface SidebarProps {
   user: AuthSession | null;
@@ -63,7 +64,8 @@ export function Sidebar({
       <div className="p-4 flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800/60">
         <div className="flex items-center gap-2.5">
           <div className="p-2 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-sm">
-            <BookOpen className="w-5 h-5" />
+            {/* <BookOpen className="w-5 h-5" /> */}
+            <img src={markoIcon} alt="" />
           </div>
           <div>
             <h1 className="font-bold text-base tracking-tight text-slate-900 dark:text-white leading-none">
@@ -106,11 +108,10 @@ export function Sidebar({
         <div className="space-y-1">
           <button
             onClick={() => handleNavClick('all')}
-            className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-xl transition-colors ${
-              activeView === 'all' && !selectedTag
-                ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
+            className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-xl transition-colors ${activeView === 'all' && !selectedTag
+              ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
           >
             <div className="flex items-center gap-2.5">
               <FileText className="w-4 h-4" />
@@ -123,11 +124,10 @@ export function Sidebar({
 
           <button
             onClick={() => handleNavClick('pinned')}
-            className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-xl transition-colors ${
-              activeView === 'pinned' && !selectedTag
-                ? 'bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
+            className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-xl transition-colors ${activeView === 'pinned' && !selectedTag
+              ? 'bg-white dark:bg-slate-800 text-amber-600 dark:text-amber-400 shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
           >
             <div className="flex items-center gap-2.5">
               <Pin className="w-4 h-4" />
@@ -140,11 +140,10 @@ export function Sidebar({
 
           <button
             onClick={() => handleNavClick('archived')}
-            className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-xl transition-colors ${
-              activeView === 'archived' && !selectedTag
-                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
+            className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium rounded-xl transition-colors ${activeView === 'archived' && !selectedTag
+              ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
           >
             <div className="flex items-center gap-2.5">
               <Archive className="w-4 h-4" />
@@ -185,11 +184,10 @@ export function Sidebar({
                   <button
                     key={tag}
                     onClick={() => handleTagClick(tag)}
-                    className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors truncate ${
-                      isSelected
-                        ? 'bg-blue-100/70 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'
-                    }`}
+                    className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors truncate ${isSelected
+                      ? 'bg-blue-100/70 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'
+                      }`}
                   >
                     <span className="text-slate-400 font-mono">#</span>
                     <span className="truncate">{tag}</span>
@@ -230,4 +228,3 @@ export function Sidebar({
     </>
   );
 }
-
