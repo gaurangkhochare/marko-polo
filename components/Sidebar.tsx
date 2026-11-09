@@ -64,7 +64,7 @@ export function Sidebar({
         <div className="flex items-center gap-2.5">
           <div className="p-2 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-sm">
             {/* <BookOpen className="w-5 h-5" /> */}
-            <Image src={markoIcon} alt="Marko Polo Icon" />
+            <Image src={markoIcon} alt="Marko Polo Icon" className='w-5 h-5' />
           </div>
           <div>
             <h1 className="font-bold text-base tracking-tight text-slate-900 dark:text-white leading-none">
