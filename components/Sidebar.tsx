@@ -1,17 +1,16 @@
 'use client';
 
-import React from 'react';
 import {
   FileText,
   Pin,
   Archive,
   Plus,
   Tag as TagIcon,
-  BookOpen,
   X,
 } from 'lucide-react';
 import { UserProfileMenu } from '@/components/UserProfileMenu';
 import { AuthSession, NoteViewMode } from '@/types';
+import Image from 'next/image';
 import markoIcon from '@/public/marko-icon.png';
 
 interface SidebarProps {
@@ -65,7 +64,7 @@ export function Sidebar({
         <div className="flex items-center gap-2.5">
           <div className="p-2 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-sm">
             {/* <BookOpen className="w-5 h-5" /> */}
-            <img src={markoIcon} alt="" />
+            <Image src={markoIcon} alt="Marko Polo Icon" />
           </div>
           <div>
             <h1 className="font-bold text-base tracking-tight text-slate-900 dark:text-white leading-none">
